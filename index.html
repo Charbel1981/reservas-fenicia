@@ -6,6 +6,7 @@
 <title>Reservas — Fenicia</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#6b1f2a">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
@@ -217,9 +218,15 @@
   }
   .field textarea{resize:vertical;min-height:58px}
   .row2{display:flex;gap:10px} .row2 .field{flex:1}
+  .timepick{display:flex;align-items:center;gap:8px}
+  .timepick select{flex:1;text-align:center;font-variant-numeric:tabular-nums;font-size:16px}
+  .timepick .colon{font-weight:700;color:var(--ink-soft)}
   .stepper{display:flex;align-items:center;border:1px solid var(--gold-line);border-radius:11px;overflow:hidden;background:var(--panel-soft)}
   .stepper button{width:50px;height:48px;border:0;background:transparent;font-size:22px;color:var(--ink);cursor:pointer}
   .stepper input{border:0;text-align:center;background:transparent;width:100%;font-size:17px;font-weight:650}
+  .zonapick{display:flex;gap:8px}
+  .zbtn{flex:1;padding:13px;border:1px solid var(--gold-line);border-radius:11px;background:var(--panel-soft);color:var(--ink);font-size:15px;font-weight:650;cursor:pointer}
+  .zbtn.sel{background:linear-gradient(135deg,var(--tyrian),var(--tyrian-2));color:#fff;border-color:transparent}
   .hint{font-size:13px;margin:-4px 0 12px;padding:8px 10px;border-radius:9px;background:var(--panel-soft);color:var(--ink-soft)}
   .hint.hab{background:var(--tyrian);color:#f7efe6;font-weight:600}
   .formwarn{font-size:12.5px;color:var(--warn);margin:-4px 0 12px;font-weight:600}
@@ -239,9 +246,36 @@
     body{background:#fff}
     .card,.mesa{box-shadow:none;break-inside:avoid}
   }
+
+  /* ---------- pantalla de acceso ---------- */
+  body.locked > *:not(#gate){display:none!important}
+  #gate{display:none}
+  body.locked #gate{display:flex;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;padding:20px;
+    background:linear-gradient(160deg,#3f1220,#6b1f2a)}
+  .gatebox{background:#fffdf8;border:1px solid #e6d6b4;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .gatebox .gm{font:700 26px/1 Georgia,"Times New Roman",serif;letter-spacing:.14em;color:#6b1f2a;padding-left:.14em}
+  .gatebox .gt{font-size:11px;color:#6f6252;margin:8px 0 20px;letter-spacing:.24em;text-transform:uppercase}
+  .gatebox input{width:100%;padding:14px;font-size:24px;text-align:center;letter-spacing:.4em;border:1px solid #e6d6b4;border-radius:11px;
+    background:#f7efe1;color:#2c2118;margin-bottom:12px;font-family:inherit}
+  .gatebox button{width:100%;padding:14px;border:0;border-radius:11px;background:linear-gradient(135deg,#6b1f2a,#8a2f39);color:#fff;
+    font-weight:700;font-size:16px;cursor:pointer}
+  .gateerr{color:#a4472f;font-size:13px;margin-top:10px;font-weight:600}
 </style>
 </head>
-<body>
+<body class="locked">
+<script>
+try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.body.classList.remove("locked"); } }catch(e){}
+</script>
+<div id="gate">
+  <div class="gatebox">
+    <div class="gm">FENICIA</div>
+    <div class="gt">Reservas · acceso privado</div>
+    <input type="password" id="gatePin" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Código">
+    <button id="gateBtn" type="button">Entrar</button>
+    <div id="gateErr" class="gateerr" hidden>Código incorrecto</div>
+  </div>
+</div>
 
 <div class="hero">
   <div class="banner" role="img" aria-label="Fenicia — Restaurant Libanès"></div>
@@ -251,7 +285,6 @@
 <div class="tabs" id="tabs">
   <button data-tab="lista" aria-selected="true">Lista</button>
   <button data-tab="mesas" aria-selected="false">Mesas</button>
-  <button data-tab="clientes" aria-selected="false">Clientes</button>
 </div>
 
 <div class="wrap">
@@ -278,7 +311,13 @@
     <input type="hidden" id="f_id">
     <div class="row2">
       <div class="field"><label for="f_fecha">Fecha</label><input type="date" id="f_fecha" required></div>
-      <div class="field"><label for="f_hora">Hora</label><input type="time" id="f_hora" required></div>
+      <div class="field"><label>Hora</label>
+        <div class="timepick">
+          <select id="f_hora_h"></select>
+          <span class="colon">:</span>
+          <select id="f_hora_m"></select>
+        </div>
+      </div>
     </div>
     <div class="field"><label for="f_nombre">Nombre</label><input type="text" id="f_nombre" autocomplete="off" required placeholder="A nombre de…"></div>
     <div id="cliHint" class="hint" hidden></div>
@@ -290,6 +329,13 @@
           <input type="number" id="f_pax" min="1" max="99" value="2" inputmode="numeric">
           <button type="button" id="paxPlus" aria-label="Más">+</button>
         </div>
+      </div>
+    </div>
+    <div class="field"><label>Zona <span style="color:var(--terra)">*</span></label>
+      <input type="hidden" id="f_zona">
+      <div class="zonapick">
+        <button type="button" class="zbtn" data-zona="Sala">Sala</button>
+        <button type="button" class="zbtn" data-zona="Terraza">Terraza</button>
       </div>
     </div>
     <div class="field"><label for="f_mesa">Mesa</label><select id="f_mesa"></select></div>
@@ -390,8 +436,9 @@
   }
   function smsHref(r){ return "sms:"+telE164(r.telefono)+"?body="+encodeURIComponent(msgConfirma(r)); }
   function enviarSMS(r){
-    r.avisoEnviado=new Date().toISOString(); persist(); render();
-    window.location.href=smsHref(r);
+    r.avisoEnviado=new Date().toISOString(); persist();
+    window.location.href=smsHref(r);   // primero se lanza la app de Mensajes, sin esperar al repintado
+    render();
   }
 
   // ---------- clientes ----------
@@ -448,18 +495,18 @@
   function cardHTML(r, opts){
     opts=opts||{};
     var done=r.estado==="cancelada"||r.estado==="noshow";
-    var cli=state._cliMap[cliKey(r.nombre,r.telefono)];
     var meta=[];
     if(r.telefono) meta.push('<a href="tel:'+esc(r.telefono)+'" style="color:inherit">'+esc(r.telefono)+'</a>');
     if(opts.showDate) meta.push(fechaCorta(r.fecha));
+    var zonaChip = r.zona ? '<span class="chip tbl">'+esc(r.zona)+'</span>' : '';
     var mesaChip = r.mesaId ? '<span class="chip tbl">'+esc(mesaLabel(r.mesaId))+'</span>' : '';
-    var habChip = (cli && cli.reservas>=3) ? '<span class="chip hab">Habitual · '+cli.reservas+'</span>' : '';
+    var habChip = '';
     var avisoChip = r.avisoEnviado ? '<span class="chip ok">✓ SMS enviado</span>' : '';
     return '<div class="card '+(done?"done":"")+'">'+
       '<div class="time">'+esc(r.hora||"--:--")+(opts.showDate?'<small>'+esc(fechaCorta(r.fecha))+'</small>':'')+'</div>'+
       '<div class="body">'+
         '<div class="name">'+esc(r.nombre)+
-          '<span class="chip pax">'+(parseInt(r.personas,10)||0)+' pax</span>'+mesaChip+habChip+avisoChip+
+          '<span class="chip pax">'+(parseInt(r.personas,10)||0)+' pax</span>'+zonaChip+mesaChip+habChip+avisoChip+
           '<span class="badge '+r.estado+'">'+EST[r.estado]+'</span>'+
         '</div>'+
         (meta.length?'<div class="meta">'+meta.join(" · ")+'</div>':'')+
@@ -680,6 +727,13 @@
   // ---------- reserva form ----------
   var dlg=document.getElementById("dlg"), form=document.getElementById("form"), fPax=document.getElementById("f_pax");
   document.getElementById("paxMinus").onclick=function(){ fPax.value=Math.max(1,(parseInt(fPax.value,10)||1)-1); checkWarn(); };
+  Array.prototype.forEach.call(document.querySelectorAll(".zbtn"), function(b){
+    b.addEventListener("click", function(){
+      document.getElementById("f_zona").value = b.dataset.zona;
+      Array.prototype.forEach.call(document.querySelectorAll(".zbtn"), function(x){ x.classList.remove("sel"); });
+      b.classList.add("sel");
+    });
+  });
   document.getElementById("paxPlus").onclick =function(){ fPax.value=Math.min(99,(parseInt(fPax.value,10)||1)+1); checkWarn(); };
   document.getElementById("cancelBtn").onclick=function(){ dlg.close(); };
   document.getElementById("newBtn").onclick=function(){ openForm(null); };
@@ -700,6 +754,7 @@
 
   function refreshCliHint(){
     var box=document.getElementById("cliHint");
+    box.hidden=true; return;   // sin historial de clientes: no se muestra aviso
     var key=cliKey(document.getElementById("f_nombre").value, document.getElementById("f_tel").value);
     var m=state._cliMap[key];
     var editingId=document.getElementById("f_id").value;
@@ -720,7 +775,7 @@
     var msgs=[];
     var mid=document.getElementById("f_mesa").value;
     var pax=parseInt(fPax.value,10)||1;
-    var fecha=document.getElementById("f_fecha").value, hora=document.getElementById("f_hora").value;
+    var fecha=document.getElementById("f_fecha").value, hora=getHoraVal();
     var editingId=document.getElementById("f_id").value;
     if(mid){
       var m=mesaById(mid);
@@ -736,15 +791,44 @@
     w.hidden=!msgs.length; w.innerHTML=msgs.join("<br>");
   }
 
+  (function fillTimeSelects(){
+    var hSel=document.getElementById("f_hora_h"), mSel=document.getElementById("f_hora_m");
+    var hh="<option value=\"\">--</option>";
+    for(var i=0;i<24;i++){ var v=String(i).padStart(2,"0"); hh+="<option value=\""+v+"\">"+v+"</option>"; }
+    hSel.innerHTML=hh;
+    var mm="<option value=\"\">--</option>";
+    for(var j=0;j<60;j+=5){ var v2=String(j).padStart(2,"0"); mm+="<option value=\""+v2+"\">"+v2+"</option>"; }
+    mSel.innerHTML=mm;
+  })();
+  function getHoraVal(){
+    var h=document.getElementById("f_hora_h").value, m=document.getElementById("f_hora_m").value;
+    return (h && m) ? (h+":"+m) : "";
+  }
+  function setHoraVal(v){
+    var p=(v||"").split(":");
+    var hSel=document.getElementById("f_hora_h"), mSel=document.getElementById("f_hora_m");
+    hSel.value = p[0]||"";
+    mSel.value = p[1]||"";
+    if(p[1] && mSel.value!==p[1]){
+      var opt=document.createElement("option"); opt.value=p[1]; opt.textContent=p[1];
+      mSel.appendChild(opt); mSel.value=p[1];
+    }
+  }
+
   function openForm(r){
     document.getElementById("formTitle").textContent=r?"Editar reserva":"Nueva reserva";
     document.getElementById("f_id").value=r?r.id:"";
-    document.getElementById("f_fecha").value=r?r.fecha:state.fecha;
-    document.getElementById("f_hora").value=r?r.hora:"";
+    document.getElementById("f_fecha").min=todayISO();
+    document.getElementById("f_fecha").value=r?r.fecha:(state.fecha<todayISO()?todayISO():state.fecha);
+    setHoraVal(r?r.hora:"");
     document.getElementById("f_nombre").value=r?r.nombre:"";
     document.getElementById("f_tel").value=r?(r.telefono||""):"";
     fPax.value=r?(parseInt(r.personas,10)||2):2;
     document.getElementById("f_notas").value=r?(r.notas||""):"";
+    document.getElementById("f_zona").value = r ? (r.zona||"") : "";
+    Array.prototype.forEach.call(document.querySelectorAll(".zbtn"), function(b){
+      b.classList.toggle("sel", b.dataset.zona === (r ? (r.zona||"") : ""));
+    });
     fillMesaSelect(r?r.mesaId:"");
     document.getElementById("cliHint").hidden=true;
     document.getElementById("formWarn").hidden=true;
@@ -758,13 +842,14 @@
     }:null;
     if(r) refreshCliHint();
     if(typeof dlg.showModal==="function") dlg.showModal(); else dlg.setAttribute("open","");
-    setTimeout(function(){ document.getElementById("f_hora").focus(); },50);
+    setTimeout(function(){ document.getElementById("f_hora_h").focus(); },50);
   }
 
   document.getElementById("f_tel").addEventListener("input",function(){ refreshCliHint(); });
   document.getElementById("f_nombre").addEventListener("blur",function(){ refreshCliHint(); });
   document.getElementById("f_mesa").addEventListener("change",checkWarn);
-  document.getElementById("f_hora").addEventListener("change",checkWarn);
+  document.getElementById("f_hora_h").addEventListener("change",checkWarn);
+  document.getElementById("f_hora_m").addEventListener("change",checkWarn);
   document.getElementById("f_fecha").addEventListener("change",checkWarn);
 
   form.addEventListener("submit",function(e){
@@ -772,10 +857,11 @@
     var id=document.getElementById("f_id").value;
     var data={
       fecha:document.getElementById("f_fecha").value,
-      hora:document.getElementById("f_hora").value,
+      hora:getHoraVal(),
       nombre:document.getElementById("f_nombre").value.trim(),
       telefono:document.getElementById("f_tel").value.trim(),
       personas:Math.max(1,parseInt(fPax.value,10)||1),
+      zona:document.getElementById("f_zona").value,
       mesaId:document.getElementById("f_mesa").value||null,
       notas:document.getElementById("f_notas").value.trim()
     };
@@ -784,6 +870,11 @@
       var w=document.getElementById("formWarn");
       w.hidden=false; w.textContent="Falta el teléfono: es obligatorio para guardar la reserva (9 dígitos).";
       document.getElementById("f_tel").focus();
+      return;
+    }
+    if(!data.zona){
+      var w2=document.getElementById("formWarn");
+      w2.hidden=false; w2.textContent="Elige Sala o Terraza antes de guardar.";
       return;
     }
     var esNueva=!id;
@@ -797,8 +888,11 @@
     }
     persist(); dlg.close();
     state.buscar=""; state.cliSel=null;
+    if(esNueva){
+      data.avisoEnviado=new Date().toISOString(); persist();
+      window.location.href=smsHref(data);   // se lanza cuanto antes, antes del repintado
+    }
     render();
-    if(esNueva) enviarSMS(data);   // abre el SMS de confirmación ya escrito
   });
   dlg.addEventListener("close",function(){ form.reset(); });
 
@@ -844,6 +938,25 @@
     persistMesas(); dlgM.close(); render();
   };
 
+  // ---------- borrado diario ----------
+  // A las 00:00 se eliminan las reservas de los días anteriores.
+  // Si la tablet estaba apagada a medianoche, se borran al abrir la app.
+  function borrarDiasAnteriores(){
+    var hoy=todayISO(), antes=state.reservas.length;
+    state.reservas=state.reservas.filter(function(r){ return r.fecha>=hoy; });
+    if(state.reservas.length!==antes) persist();
+  }
+  borrarDiasAnteriores();
+  var diaActual=todayISO();
+  setInterval(function(){
+    var hoy=todayISO();
+    if(hoy===diaActual) return;
+    if(state.fecha<hoy) state.fecha=hoy;
+    diaActual=hoy;
+    borrarDiasAnteriores();
+    render();
+  },30000);
+
   render();
 })();
 </script>
@@ -882,6 +995,22 @@
 })();
 </script>
 <script>
+(function(){
+  var PIN_HASH="c4beddcf557f06a5d8f4761b653b9a430a29b8f8aa574c1b5095b9075bd99209";
+  var btn=document.getElementById("gateBtn"), pin=document.getElementById("gatePin"), err=document.getElementById("gateErr");
+  function tryUnlock(){
+    crypto.subtle.digest("SHA-256", new TextEncoder().encode(pin.value)).then(function(buf){
+      var hex=Array.prototype.map.call(new Uint8Array(buf),function(b){ return ("0"+b.toString(16)).slice(-2); }).join("");
+      if(hex===PIN_HASH){
+        try{ localStorage.setItem("reservas_fenicia_unlocked_v1","1"); }catch(e){}
+        document.body.classList.remove("locked");
+      } else { err.hidden=false; pin.value=""; pin.focus(); }
+    });
+  }
+  btn.addEventListener("click", tryUnlock);
+  pin.addEventListener("keydown", function(e){ if(e.key==="Enter") tryUnlock(); });
+  if(document.body.classList.contains("locked")) setTimeout(function(){ pin.focus(); }, 100);
+})();
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
 }
