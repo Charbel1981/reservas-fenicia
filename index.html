@@ -477,17 +477,16 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     var serv=servicioDe(res.hora), total=ocupacion(res.fecha,zona,serv), L=limites(zona), niv=nivelAforo(zona,total);
     if(!niv) return null;
     var cuando=(serv==="comida"?"la comida":"la cena")+" del "+fechaCortaDM(res.fecha);
-    if(niv==="lleno") return {lleno:true, titulo:zona+" llena",
-      texto:"Hay "+total+" personas reservadas para "+cuando+" y en la "+zona.toLowerCase()+" caben "+L.aforo+"."};
+    if(niv==="lleno") return {lleno:true, titulo:zona+": aforo superado",
+      texto:"Hay "+total+" personas reservadas para "+cuando+" y en la "+zona.toLowerCase()+" caben "+L.aforo+". La reserva está guardada."};
     return {lleno:false, titulo:zona+": llegando al límite",
-      texto:"Ya hay "+total+" personas reservadas para "+cuando+" (caben "+L.aforo+"). Quedan "+(L.aforo-total)+" plazas."};
+      texto:"Ya hay "+total+" personas reservadas para "+cuando+" (caben "+L.aforo+"). Quedan "+(L.aforo-total)+" plazas. La reserva está guardada."};
   }
   function mostrarAvisoAforo(a, despues){
     var d=document.getElementById("dlgAforo");
-    document.getElementById("aforoIco").textContent=a.lleno?"⛔":"⚠️";
+    document.getElementById("aforoIco").textContent=a.lleno?"🔴":"⚠️";
     document.getElementById("aforoTit").textContent=a.titulo;
     document.getElementById("aforoTxt").textContent=a.texto;
-    try{ if(navigator.vibrate) navigator.vibrate(a.lleno?[250,120,250]:250); }catch(e){}
     document.getElementById("aforoOk").onclick=function(){ d.close(); if(despues) despues(); };
     if(typeof d.showModal==="function") d.showModal(); else d.setAttribute("open","");
   }
@@ -651,7 +650,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
         var t=ocupacion(fecha,z,serv);
         if(!t) return;
         var niv=nivelAforo(z,t);
-        out.push('<span class="'+niv+'">'+(niv==="lleno"?"⛔ ":niv==="cerca"?"⚠️ ":"")+z+' '+serv+': '+t+'/'+limites(z).aforo+'</span>');
+        out.push('<span class="'+niv+'">'+(niv==="lleno"?"🔴 ":niv==="cerca"?"⚠️ ":"")+z+' '+serv+': '+t+'/'+limites(z).aforo+'</span>');
       });
     });
     return out.length?'<div class="ocup">'+out.join("")+'</div>':'';
@@ -893,7 +892,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     var total=ocupacion(fecha,zona,serv,document.getElementById("f_id").value)+(parseInt(fPax.value,10)||0);
     var niv=nivelAforo(zona,total);
     box.className="aforo"+(niv?" "+niv:"");
-    box.innerHTML=(niv==="lleno"?"⛔ ":niv==="cerca"?"⚠️ ":"")+zona+", "+(serv==="comida"?"comida":"cena")+
+    box.innerHTML=(niv==="lleno"?"🔴 ":niv==="cerca"?"⚠️ ":"")+zona+", "+(serv==="comida"?"comida":"cena")+
       ": con esta reserva, <b>"+total+" de "+L.aforo+"</b> personas";
     box.hidden=false;
   }
