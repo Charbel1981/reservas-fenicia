@@ -434,7 +434,16 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     return tpl.replace(/\{nombre_completo\}|\{nombre\}|\{fecha\}|\{hora\}|\{personas\}|\{local\}/g,
       function(k){ return map[k]; }).replace(/[ \t]{2,}/g," ").replace(/ +([.,;:])/g,"$1").trim();
   }
-  function smsHref(r){ return "sms:"+telE164(r.telefono)+"?body="+encodeURIComponent(msgConfirma(r)); }
+  // El SMS sale sin tildes (así el operador no lo cobra como varios SMS). Se mantienen la ñ y la ç.
+  function quitarTildes(s){
+    return String(s)
+      .replace(/[áàâä]/g,"a").replace(/[ÁÀÂÄ]/g,"A")
+      .replace(/[éèêë]/g,"e").replace(/[ÉÈÊË]/g,"E")
+      .replace(/[íìîï]/g,"i").replace(/[ÍÌÎÏ]/g,"I")
+      .replace(/[óòôö]/g,"o").replace(/[ÓÒÔÖ]/g,"O")
+      .replace(/[úùûü]/g,"u").replace(/[ÚÙÛÜ]/g,"U");
+  }
+  function smsHref(r){ return "sms:"+telE164(r.telefono)+"?body="+encodeURIComponent(quitarTildes(msgConfirma(r))); }
   function enviarSMS(r){
     r.avisoEnviado=new Date().toISOString(); persist();
     window.location.href=smsHref(r);   // primero se lanza la app de Mensajes, sin esperar al repintado
