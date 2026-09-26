@@ -419,9 +419,21 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     var tpl=cfg.plantillaSMS&&cfg.plantillaSMS.trim();
     if(!tpl){
       // El numero de mesa NO se envia al cliente (lo gestionan los camareros).
-      return "Hola "+nombrePila(r.nombre)+", tu reserva en Fenicia queda confirmada: "+
-        fechaLarga(r.fecha).replace(",","")+" a las "+r.hora+", "+pax+(pax===1?" persona":" personas")+"."+
-        " Para cualquier cambio en tu reserva, por favor llama al "+(cfg.telLocal||"93 330 01 46")+".";
+      // Cabe en un solo SMS (160 caracteres): fecha corta (sabado 26/09) y, si aun asi
+      // no cabe (nombre muy largo), se quita el dia de la semana y despues el nombre.
+      var p=r.fecha.split("-");
+      var dia=new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString("es-ES",{weekday:"long"});
+      var ddmm=p[2]+"/"+p[1];
+      var tel=cfg.telLocal||"93 330 01 46";
+      function armar(nombre, conDia){
+        return "Hola"+(nombre?" "+nombre:"")+", tu reserva en Fenicia queda confirmada: "+
+          (conDia?dia+" ":"")+ddmm+" a las "+r.hora+", "+pax+(pax===1?" persona":" personas")+"."+
+          " Para cualquier cambio en tu reserva, por favor llama al "+tel+".";
+      }
+      var n=nombrePila(r.nombre);
+      var opciones=[armar(n,true), armar(n,false), armar("",false)];
+      for(var i=0;i<opciones.length;i++){ if(quitarTildes(opciones[i]).length<=160) return opciones[i]; }
+      return opciones[opciones.length-1];
     }
     var map={
       "{nombre}":nombrePila(r.nombre),
