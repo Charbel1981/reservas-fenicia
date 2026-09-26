@@ -301,7 +301,8 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
 
 <div class="tabs" id="tabs">
   <button data-tab="lista" aria-selected="true">Lista</button>
-  <button data-tab="mesas" aria-selected="false">Mesas</button>
+  <button data-tab="sala" aria-selected="false">Sala</button>
+  <button data-tab="terraza" aria-selected="false">Terraza</button>
 </div>
 
 <div class="wrap">
@@ -583,7 +584,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     document.getElementById("dateSmall").textContent=(rel?rel+" · ":"")+state.fecha;
     daybar.hidden = (state.tab==="clientes");
 
-    if(state.tab==="lista") viewLista();
+    if(state.tab==="lista" || state.tab==="sala" || state.tab==="terraza") viewLista();
     else if(state.tab==="mesas") viewMesas();
     else viewClientes();
   }
@@ -639,14 +640,14 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
 
   function toolbar(ph){
     return '<div class="toolrow"><input type="search" id="search" placeholder="'+ph+'" value="'+esc(state.buscar)+'">'+
-      (state.tab==="lista"?'<button id="copyBtn">Copiar lista</button><button id="printBtn">Imprimir</button>':'')+
-      (state.tab==="mesas"?'<button id="cfgMesas">⚙ Ajustes</button>':'')+'</div>';
+      '<button id="copyBtn">Copiar lista</button><button id="printBtn">Imprimir</button>'+
+      (state.tab==="lista"?'<button id="cfgMesas">⚙ Ajustes</button>':'')+'</div>';
   }
 
-  function ocupacionDiaHTML(fecha){
+  function ocupacionDiaHTML(fecha, soloZona){
     var out=[];
     ["comida","cena"].forEach(function(serv){
-      ["Sala","Terraza"].forEach(function(z){
+      (soloZona?[soloZona]:["Sala","Terraza"]).forEach(function(z){
         var t=ocupacion(fecha,z,serv);
         if(!t) return;
         var niv=nivelAforo(z,t);
@@ -654,6 +655,12 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
       });
     });
     return out.length?'<div class="ocup">'+out.join("")+'</div>':'';
+  }
+  // Zona de la pestaña activa: "Sala", "Terraza" o "" (Lista = todas)
+  function zonaTab(){ return state.tab==="sala" ? "Sala" : (state.tab==="terraza" ? "Terraza" : ""); }
+  function filtrarZona(rows){
+    var z=zonaTab();
+    return z ? rows.filter(function(r){ return zonaDe(r)===z; }) : rows;
   }
   function viewLista(){
     var searching=state.buscar.trim().length>0, rows;
@@ -664,6 +671,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     } else {
       rows=resDia(state.fecha);
     }
+    rows=filtrarZona(rows);
     var act=rows.filter(function(r){return r.estado!=="cancelada"&&r.estado!=="noshow";});
     var pax=act.reduce(function(s,r){return s+(parseInt(r.personas,10)||0);},0);
     var lleg=rows.filter(function(r){return r.estado==="llegada";}).length;
@@ -671,10 +679,10 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     var html=toolbar("Buscar por nombre o teléfono (todas las fechas)")+
       '<div class="summary"><span><b>'+act.length+'</b> reservas</span><span><b>'+pax+'</b> comensales</span>'+
       (searching?'':'<span><b>'+lleg+'</b> han llegado</span>')+'</div>'+
-      (searching?'':ocupacionDiaHTML(state.fecha));
+      (searching?'':ocupacionDiaHTML(state.fecha, zonaTab()));
     html += rows.length
       ? '<div class="list">'+rows.map(function(r){return cardHTML(r,{showDate:searching});}).join("")+'</div>'
-      : '<div class="empty">'+(searching?"Sin resultados.":"No hay reservas para este día.<br>Pulsa <b>＋ Nueva reserva</b>.")+'</div>';
+      : '<div class="empty">'+(searching?"Sin resultados.":"No hay reservas"+(zonaTab()?" en "+(zonaTab()==="Sala"?"la sala":"la terraza"):"")+" para este día.<br>Pulsa <b>＋ Nueva reserva</b>.")+'</div>';
     view.innerHTML=html;
     wireToolbar();
   }
@@ -781,9 +789,9 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
   }
 
   function copyDia(){
-    var rows=resDia(state.fecha).filter(function(r){return r.estado!=="cancelada";});
+    var rows=filtrarZona(resDia(state.fecha)).filter(function(r){return r.estado!=="cancelada";});
     var pax=rows.filter(function(r){return r.estado!=="noshow";}).reduce(function(s,r){return s+(parseInt(r.personas,10)||0);},0);
-    var txt="Reservas "+fechaCorta(state.fecha)+" — "+rows.length+" reservas / "+pax+" pax\n"+
+    var txt="Reservas "+(zonaTab()?zonaTab()+" ":"")+fechaCorta(state.fecha)+" — "+rows.length+" reservas / "+pax+" pax\n"+
       rows.map(function(r){
         return (r.hora||"--:--")+"  "+r.nombre+" ("+(parseInt(r.personas,10)||0)+")"+
           (r.mesaId?"  ["+mesaLabel(r.mesaId)+"]":"")+
@@ -952,9 +960,10 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     document.getElementById("f_tel").value=r?(r.telefono||""):"";
     fPax.value=r?(parseInt(r.personas,10)||2):2;
     document.getElementById("f_notas").value=r?(r.notas||""):"";
-    document.getElementById("f_zona").value = r ? (r.zona||"") : "";
+    var zonaIni = r ? (r.zona||"") : zonaTab();
+    document.getElementById("f_zona").value = zonaIni;
     Array.prototype.forEach.call(document.querySelectorAll(".zbtn"), function(b){
-      b.classList.toggle("sel", b.dataset.zona === (r ? (r.zona||"") : ""));
+      b.classList.toggle("sel", b.dataset.zona === zonaIni);
     });
     fillMesaSelect(r?r.mesaId:"");
     document.getElementById("cliHint").hidden=true;
