@@ -354,7 +354,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
   <div class="mesasEditor">
     <h2>Ajustes</h2>
     <div class="field"><label for="cfgTel">Teléfono del local <span style="font-weight:400;color:var(--ink-soft)">(aparece en el SMS de confirmación)</span></label>
-      <input type="tel" id="cfgTel" placeholder="Ej. 93 123 45 67"></div>
+      <input type="tel" id="cfgTel" placeholder="Por defecto: 93 330 01 46"></div>
     <div class="field"><label for="cfgSMS">Texto del SMS de confirmación</label>
       <textarea id="cfgSMS" rows="4" placeholder="Déjalo vacío para usar el texto por defecto"></textarea>
       <div style="font-size:11.5px;color:var(--ink-soft);margin-top:5px;line-height:1.55">
@@ -421,7 +421,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
       // El numero de mesa NO se envia al cliente (lo gestionan los camareros).
       return "Hola "+nombrePila(r.nombre)+", tu reserva en Fenicia queda confirmada: "+
         fechaLarga(r.fecha).replace(",","")+" a las "+r.hora+", "+pax+(pax===1?" persona":" personas")+"."+
-        (cfg.telLocal?" Para cambios o anular: "+cfg.telLocal+".":"");
+        " Para cualquier cambio en tu reserva, por favor llama al "+(cfg.telLocal||"93 330 01 46")+".";
     }
     var map={
       "{nombre}":nombrePila(r.nombre),
@@ -429,7 +429,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
       "{fecha}":fechaLarga(r.fecha).replace(",",""),
       "{hora}":r.hora||"",
       "{personas}":String(pax),
-      "{local}":cfg.telLocal||""
+      "{local}":cfg.telLocal||"93 330 01 46"
     };
     return tpl.replace(/\{nombre_completo\}|\{nombre\}|\{fecha\}|\{hora\}|\{personas\}|\{local\}/g,
       function(k){ return map[k]; }).replace(/[ \t]{2,}/g," ").replace(/ +([.,;:])/g,"$1").trim();
