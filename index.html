@@ -230,6 +230,23 @@
   .hint{font-size:13px;margin:-4px 0 12px;padding:8px 10px;border-radius:9px;background:var(--panel-soft);color:var(--ink-soft)}
   .hint.hab{background:var(--tyrian);color:#f7efe6;font-weight:600}
   .formwarn{font-size:12.5px;color:var(--warn);margin:-4px 0 12px;font-weight:600}
+  .aforo{margin-top:8px;font-size:13px;padding:8px 10px;border-radius:9px;background:var(--panel-soft);color:var(--ink-soft)}
+  .aforo b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .aforo.cerca{background:var(--warn-soft);color:var(--warn)}
+  .aforo.cerca b{color:var(--warn)}
+  .aforo.lleno{background:#f6dcd6;color:#9b2c1c}
+  .aforo.lleno b{color:#9b2c1c}
+  .ocup{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 2px 12px}
+  .ocup span{font-size:12px;font-weight:650;padding:3px 9px;border-radius:999px;background:var(--panel-soft);color:var(--ink-soft);
+    border:1px solid var(--gold-line);font-variant-numeric:tabular-nums}
+  .ocup span.cerca{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+  .ocup span.lleno{background:#f6dcd6;color:#9b2c1c;border-color:transparent}
+  #dlgAforo .box{padding:22px 20px;text-align:center}
+  #dlgAforo .ico{font-size:34px;line-height:1}
+  #dlgAforo h2{margin:10px 0 8px;font:600 19px/1.25 Georgia,serif}
+  #dlgAforo p{margin:0 0 18px;color:var(--ink-soft);font-size:15px;line-height:1.45}
+  #dlgAforo button{width:100%;padding:14px;border:0;border-radius:11px;background:linear-gradient(135deg,var(--tyrian),var(--tyrian-2));
+    color:#fff;font-weight:700;font-size:16px;cursor:pointer}
   .dlg-actions{display:flex;gap:10px;margin-top:14px}
   .dlg-actions button{flex:1;padding:13px;border-radius:11px;font-size:15px;font-weight:650;cursor:pointer;border:1px solid var(--gold-line);background:var(--panel-soft);color:var(--ink)}
   .dlg-actions button.save{background:linear-gradient(135deg,var(--tyrian),var(--tyrian-2));color:#f7efe6;border-color:transparent}
@@ -337,6 +354,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
         <button type="button" class="zbtn" data-zona="Sala">Sala</button>
         <button type="button" class="zbtn" data-zona="Terraza">Terraza</button>
       </div>
+      <div id="aforoInfo" class="aforo" hidden></div>
     </div>
     <div class="field"><label for="f_mesa">Mesa</label><select id="f_mesa"></select></div>
     <div id="formWarn" class="formwarn" hidden></div>
@@ -350,6 +368,15 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
 </dialog>
 
 <!-- mesas -->
+<dialog id="dlgAforo">
+  <div class="box">
+    <div class="ico" id="aforoIco">⚠️</div>
+    <h2 id="aforoTit"></h2>
+    <p id="aforoTxt"></p>
+    <button type="button" id="aforoOk">Entendido</button>
+  </div>
+</dialog>
+
 <dialog id="dlgMesas">
   <div class="mesasEditor">
     <h2>Ajustes</h2>
@@ -361,6 +388,18 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
         Se rellenan solas: <b>{nombre}</b> · {nombre_completo} · <b>{fecha}</b> · <b>{hora}</b> · <b>{personas}</b> · {local}<br>
         El número de mesa no se envía al cliente.
       </div></div>
+    <h3 class="sec">Aforo</h3>
+    <div class="row2">
+      <div class="field"><label for="cfgAforoSala">Sala: caben</label><input type="number" id="cfgAforoSala" min="1" inputmode="numeric"></div>
+      <div class="field"><label for="cfgAvisoSala">Avisar a partir de</label><input type="number" id="cfgAvisoSala" min="1" inputmode="numeric"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label for="cfgAforoTerraza">Terraza: caben</label><input type="number" id="cfgAforoTerraza" min="1" inputmode="numeric"></div>
+      <div class="field"><label for="cfgAvisoTerraza">Avisar a partir de</label><input type="number" id="cfgAvisoTerraza" min="1" inputmode="numeric"></div>
+    </div>
+    <div style="font-size:11.5px;color:var(--ink-soft);margin:-4px 0 12px;line-height:1.5">
+      Se cuenta por servicio: comida (antes de las 17:00) y cena (desde las 17:00). No cuentan las canceladas ni los "no vino".
+    </div>
     <h3 class="sec">Mesas</h3>
     <div id="meditList"></div>
     <button type="button" class="addmesa" id="addMesaBtn">＋ Añadir mesa</button>
@@ -412,6 +451,46 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
   function cliKey(nombre,tel){ var d=telNorm(tel); return d ? "t:"+d : "n:"+(nombre||"").trim().toLowerCase(); }
   function mesaById(id){ for(var i=0;i<state.mesas.length;i++) if(state.mesas[i].id===id) return state.mesas[i]; return null; }
   function mesaLabel(id){ var m=mesaById(id); return m ? ("Mesa "+m.nombre) : ""; }
+
+  // ---------- aforo por zona y servicio ----------
+  // Sala: caben 60, aviso a partir de 30.  Terraza: caben 32, aviso a partir de 20.
+  function servicioDe(hora){ return (hora||"") < "17:00" ? "comida" : "cena"; }
+  function zonaDe(r){ if(r.zona) return r.zona; var m=mesaById(r.mesaId); return m?m.zona:""; }
+  function limites(zona){
+    if(zona==="Terraza") return {aforo:+cfg.aforoTerraza||32, aviso:+cfg.avisoTerraza||20};
+    return {aforo:+cfg.aforoSala||60, aviso:+cfg.avisoSala||30};
+  }
+  function ocupacion(fecha, zona, servicio, excluirId){
+    return state.reservas.filter(function(x){
+      return x.id!==excluirId && x.fecha===fecha && zonaDe(x)===zona && servicioDe(x.hora)===servicio &&
+             x.estado!=="cancelada" && x.estado!=="noshow";
+    }).reduce(function(s,x){ return s+(parseInt(x.personas,10)||0); },0);
+  }
+  function nivelAforo(zona, total){
+    var L=limites(zona);
+    return total>=L.aforo ? "lleno" : (total>=L.aviso ? "cerca" : "");
+  }
+  function fechaCortaDM(iso){ var p=iso.split("-"); return p[2]+"/"+p[1]; }
+  function avisoAforo(res){
+    var zona=zonaDe(res);
+    if(zona!=="Sala" && zona!=="Terraza") return null;
+    var serv=servicioDe(res.hora), total=ocupacion(res.fecha,zona,serv), L=limites(zona), niv=nivelAforo(zona,total);
+    if(!niv) return null;
+    var cuando=(serv==="comida"?"la comida":"la cena")+" del "+fechaCortaDM(res.fecha);
+    if(niv==="lleno") return {lleno:true, titulo:zona+" llena",
+      texto:"Hay "+total+" personas reservadas para "+cuando+" y en la "+zona.toLowerCase()+" caben "+L.aforo+"."};
+    return {lleno:false, titulo:zona+": llegando al límite",
+      texto:"Ya hay "+total+" personas reservadas para "+cuando+" (caben "+L.aforo+"). Quedan "+(L.aforo-total)+" plazas."};
+  }
+  function mostrarAvisoAforo(a, despues){
+    var d=document.getElementById("dlgAforo");
+    document.getElementById("aforoIco").textContent=a.lleno?"⛔":"⚠️";
+    document.getElementById("aforoTit").textContent=a.titulo;
+    document.getElementById("aforoTxt").textContent=a.texto;
+    try{ if(navigator.vibrate) navigator.vibrate(a.lleno?[250,120,250]:250); }catch(e){}
+    document.getElementById("aforoOk").onclick=function(){ d.close(); if(despues) despues(); };
+    if(typeof d.showModal==="function") d.showModal(); else d.setAttribute("open","");
+  }
   function telE164(t){ var d=telNorm(t); return d ? "+34"+d : ""; }
   function nombrePila(n){ return (n||"").trim().split(/\s+/)[0] || ""; }
   function msgConfirma(r){
@@ -565,6 +644,18 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
       (state.tab==="mesas"?'<button id="cfgMesas">⚙ Ajustes</button>':'')+'</div>';
   }
 
+  function ocupacionDiaHTML(fecha){
+    var out=[];
+    ["comida","cena"].forEach(function(serv){
+      ["Sala","Terraza"].forEach(function(z){
+        var t=ocupacion(fecha,z,serv);
+        if(!t) return;
+        var niv=nivelAforo(z,t);
+        out.push('<span class="'+niv+'">'+(niv==="lleno"?"⛔ ":niv==="cerca"?"⚠️ ":"")+z+' '+serv+': '+t+'/'+limites(z).aforo+'</span>');
+      });
+    });
+    return out.length?'<div class="ocup">'+out.join("")+'</div>':'';
+  }
   function viewLista(){
     var searching=state.buscar.trim().length>0, rows;
     if(searching){
@@ -580,7 +671,8 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
 
     var html=toolbar("Buscar por nombre o teléfono (todas las fechas)")+
       '<div class="summary"><span><b>'+act.length+'</b> reservas</span><span><b>'+pax+'</b> comensales</span>'+
-      (searching?'':'<span><b>'+lleg+'</b> han llegado</span>')+'</div>';
+      (searching?'':'<span><b>'+lleg+'</b> han llegado</span>')+'</div>'+
+      (searching?'':ocupacionDiaHTML(state.fecha));
     html += rows.length
       ? '<div class="list">'+rows.map(function(r){return cardHTML(r,{showDate:searching});}).join("")+'</div>'
       : '<div class="empty">'+(searching?"Sin resultados.":"No hay reservas para este día.<br>Pulsa <b>＋ Nueva reserva</b>.")+'</div>';
@@ -753,8 +845,10 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
       document.getElementById("f_zona").value = b.dataset.zona;
       Array.prototype.forEach.call(document.querySelectorAll(".zbtn"), function(x){ x.classList.remove("sel"); });
       b.classList.add("sel");
+      checkWarn();
     });
   });
+  fPax.addEventListener("input", checkWarn);
   document.getElementById("paxPlus").onclick =function(){ fPax.value=Math.min(99,(parseInt(fPax.value,10)||1)+1); checkWarn(); };
   document.getElementById("cancelBtn").onclick=function(){ dlg.close(); };
   document.getElementById("newBtn").onclick=function(){ openForm(null); };
@@ -791,7 +885,20 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     } else { box.hidden=true; box.textContent=""; }
   }
 
+  function actualizarAforoForm(){
+    var box=document.getElementById("aforoInfo");
+    var zona=document.getElementById("f_zona").value, hora=getHoraVal(), fecha=document.getElementById("f_fecha").value;
+    if(!zona || !hora || !fecha){ box.hidden=true; return; }
+    var serv=servicioDe(hora), L=limites(zona);
+    var total=ocupacion(fecha,zona,serv,document.getElementById("f_id").value)+(parseInt(fPax.value,10)||0);
+    var niv=nivelAforo(zona,total);
+    box.className="aforo"+(niv?" "+niv:"");
+    box.innerHTML=(niv==="lleno"?"⛔ ":niv==="cerca"?"⚠️ ":"")+zona+", "+(serv==="comida"?"comida":"cena")+
+      ": con esta reserva, <b>"+total+" de "+L.aforo+"</b> personas";
+    box.hidden=false;
+  }
   function checkWarn(){
+    actualizarAforoForm();
     var w=document.getElementById("formWarn");
     var msgs=[];
     var mid=document.getElementById("f_mesa").value;
@@ -862,6 +969,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
       }
     }:null;
     if(r) refreshCliHint();
+    actualizarAforoForm();
     if(typeof dlg.showModal==="function") dlg.showModal(); else dlg.setAttribute("open","");
     setTimeout(function(){ document.getElementById("f_hora_h").focus(); },50);
   }
@@ -909,11 +1017,16 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     }
     persist(); dlg.close();
     state.buscar=""; state.cliSel=null;
-    if(esNueva){
-      data.avisoEnviado=new Date().toISOString(); persist();
-      window.location.href=smsHref(data);   // se lanza cuanto antes, antes del repintado
+    function seguir(){
+      if(esNueva){
+        data.avisoEnviado=new Date().toISOString(); persist();
+        window.location.href=smsHref(data);   // se lanza cuanto antes, antes del repintado
+      }
+      render();
     }
-    render();
+    var aviso=avisoAforo(data);
+    if(aviso){ render(); mostrarAvisoAforo(aviso, seguir); }
+    else seguir();
   });
   dlg.addEventListener("close",function(){ form.reset(); });
 
@@ -924,6 +1037,11 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     draftMesas=state.mesas.map(function(m){return {id:m.id,nombre:m.nombre,zona:m.zona,capacidad:m.capacidad};});
     document.getElementById("cfgTel").value=cfg.telLocal||"";
     document.getElementById("cfgSMS").value=cfg.plantillaSMS||"";
+    ["Sala","Terraza"].forEach(function(z){
+      var L=limites(z);
+      document.getElementById("cfgAforo"+z).value=L.aforo;
+      document.getElementById("cfgAviso"+z).value=L.aviso;
+    });
     renderMedit();
     if(typeof dlgM.showModal==="function") dlgM.showModal(); else dlgM.setAttribute("open","");
   }
@@ -952,7 +1070,13 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
   document.getElementById("mesasCancel").onclick=function(){ dlgM.close(); };
   document.getElementById("mesasSave").onclick=function(){
     cfg.telLocal=document.getElementById("cfgTel").value.trim();
-    cfg.plantillaSMS=document.getElementById("cfgSMS").value.trim(); saveCfg();
+    cfg.plantillaSMS=document.getElementById("cfgSMS").value.trim();
+    ["Sala","Terraza"].forEach(function(z){
+      var a=parseInt(document.getElementById("cfgAforo"+z).value,10), v=parseInt(document.getElementById("cfgAviso"+z).value,10);
+      if(a>0) cfg["aforo"+z]=a;
+      if(v>0) cfg["aviso"+z]=v;
+    });
+    saveCfg();
     state.mesas=draftMesas.filter(function(m){return m.nombre.trim();})
       .map(function(m){return {id:m.id,nombre:m.nombre.trim(),zona:(m.zona||"Sala").trim(),capacidad:m.capacidad};});
     if(!state.mesas.length) state.mesas=DEF_MESAS.slice();
