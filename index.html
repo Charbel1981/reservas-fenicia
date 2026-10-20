@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Reservas — Fenicia</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#6b1f2a">
+<meta name="theme-color" content="#681316">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -258,6 +258,24 @@
   .medit button{border:0;background:transparent;color:var(--terra);font-size:18px;cursor:pointer;padding:0 6px}
   .addmesa{background:var(--panel-soft);border:1px dashed var(--gold-line);border-radius:10px;padding:10px;width:100%;cursor:pointer;color:var(--tyrian-2);font-weight:650;font-size:14px}
 
+  /* ---------- inicio de sesión ---------- */
+  #login{display:none}
+  body.sinsesion .hero, body.sinsesion .tabs, body.sinsesion .wrap, body.sinsesion .fab{display:none!important}
+  body.sinsesion #login{display:flex;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center;padding:20px;
+    background:linear-gradient(160deg,#3f1220,#6b1f2a)}
+  .loginbox{background:#fffdf8;border:1px solid #e6d6b4;border-radius:16px;padding:28px 24px;max-width:340px;width:100%;
+    text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:10px}
+  .loginbox .lm{font:700 26px/1 Georgia,"Times New Roman",serif;letter-spacing:.14em;color:#6b1f2a;padding-left:.14em}
+  .loginbox .lt{font-size:11px;color:#6f6252;margin:4px 0 10px;letter-spacing:.2em;text-transform:uppercase}
+  .loginbox input{padding:13px;font-size:16px;border:1px solid #e6d6b4;border-radius:11px;background:#f7efe1;color:#2c2118;font-family:inherit}
+  .loginbox button{padding:14px;border:0;border-radius:11px;background:linear-gradient(135deg,#6b1f2a,#8a2f39);color:#fff;
+    font-weight:700;font-size:16px;cursor:pointer;margin-top:4px}
+  .loginbox button:disabled{opacity:.6}
+  .loginerr{color:#a4472f;font-size:13px;font-weight:600}
+  #syncPill{margin-left:auto}
+  .sync{font-size:12px;font-weight:650;white-space:nowrap}
+  .sync.ok{color:var(--ok)} .sync.sub{color:var(--warn)} .sync.off{color:#9b2c1c}
+
   /* ---------- hoja para imprimir (para los camareros) ---------- */
   #hojaImp{display:none}
   @media print{
@@ -287,35 +305,18 @@
     #hojaImp .hi-vacio{font-size:12pt;margin-top:20px}
     #hojaImp .hi-pie{margin-top:14px;font-size:8.5pt;color:#555}
   }
-
-  /* ---------- pantalla de acceso ---------- */
-  body.locked > *:not(#gate){display:none!important}
-  #gate{display:none}
-  body.locked #gate{display:flex;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;padding:20px;
-    background:linear-gradient(160deg,#3f1220,#6b1f2a)}
-  .gatebox{background:#fffdf8;border:1px solid #e6d6b4;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;
-    box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  .gatebox .gm{font:700 26px/1 Georgia,"Times New Roman",serif;letter-spacing:.14em;color:#6b1f2a;padding-left:.14em}
-  .gatebox .gt{font-size:11px;color:#6f6252;margin:8px 0 20px;letter-spacing:.24em;text-transform:uppercase}
-  .gatebox input{width:100%;padding:14px;font-size:24px;text-align:center;letter-spacing:.4em;border:1px solid #e6d6b4;border-radius:11px;
-    background:#f7efe1;color:#2c2118;margin-bottom:12px;font-family:inherit}
-  .gatebox button{width:100%;padding:14px;border:0;border-radius:11px;background:linear-gradient(135deg,#6b1f2a,#8a2f39);color:#fff;
-    font-weight:700;font-size:16px;cursor:pointer}
-  .gateerr{color:#a4472f;font-size:13px;margin-top:10px;font-weight:600}
 </style>
 </head>
-<body class="locked">
-<script>
-try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.body.classList.remove("locked"); } }catch(e){}
-</script>
-<div id="gate">
-  <div class="gatebox">
-    <div class="gm">FENICIA</div>
-    <div class="gt">Reservas · acceso privado</div>
-    <input type="password" id="gatePin" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Código">
-    <button id="gateBtn" type="button">Entrar</button>
-    <div id="gateErr" class="gateerr" hidden>Código incorrecto</div>
-  </div>
+<body>
+<div id="login">
+  <form class="loginbox" id="loginForm" autocomplete="on">
+    <div class="lm">FENICIA</div>
+    <div class="lt">Reservas · acceso del personal</div>
+    <input type="email" id="loginEmail" placeholder="Correo" autocomplete="username" required>
+    <input type="password" id="loginPass" placeholder="Contraseña" autocomplete="current-password" required>
+    <button type="submit" id="loginBtn">Entrar</button>
+    <div id="loginErr" class="loginerr" hidden></div>
+  </form>
 </div>
 
 <div class="hero">
@@ -429,6 +430,9 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     <h3 class="sec">Mesas</h3>
     <div id="meditList"></div>
     <button type="button" class="addmesa" id="addMesaBtn">＋ Añadir mesa</button>
+    <h3 class="sec">Cuenta</h3>
+    <div style="font-size:13px;color:var(--ink-soft);margin:-2px 0 10px">Sesión iniciada como <b id="cuentaEmail">—</b></div>
+    <button type="button" class="addmesa" id="logoutBtn" style="color:var(--terra)">Cerrar sesión en este aparato</button>
     <div class="dlg-actions">
       <button type="button" id="mesasCancel">Cerrar</button>
       <button type="button" class="save" id="mesasSave">Guardar</button>
@@ -436,10 +440,11 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
   </div>
 </dialog>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 (function(){
   "use strict";
-  var K = { res:"reservas_fenicia_v1", mesas:"reservas_fenicia_mesas_v2", seen:"reservas_fenicia_seen_v2", cfg:"reservas_fenicia_cfg_v1" };
+  var K = { res:"reservas_fenicia_v1", mesas:"reservas_fenicia_mesas_v2", seen:"reservas_fenicia_seen_v2", cfg:"reservas_fenicia_cfg_v1", base:"reservas_fenicia_base_v1" };
   var EST = { pendiente:"Pendiente", llegada:"Llegó", noshow:"No vino", cancelada:"Cancelada" };
   var DEF_MESAS = [];
   for (var _i=1; _i<=21; _i++){
@@ -461,7 +466,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
 
   function loadArr(k){ try{ var v=JSON.parse(localStorage.getItem(k)); return Array.isArray(v)?v:[]; }catch(e){ return []; } }
   function saveArr(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ alert("No se ha podido guardar."); } }
-  function persist(){ saveArr(K.res, state.reservas); }
+  function persist(){ saveArr(K.res, state.reservas); subir(); }
   function persistMesas(){ saveArr(K.mesas, state.mesas); }
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
@@ -703,7 +708,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
 
     var html=toolbar("Buscar por nombre o teléfono (todas las fechas)")+
       '<div class="summary"><span><b>'+act.length+'</b> reservas</span><span><b>'+pax+'</b> comensales</span>'+
-      (searching?'':'<span><b>'+lleg+'</b> han llegado</span>')+'</div>'+
+      (searching?'':'<span><b>'+lleg+'</b> han llegado</span>')+'<span id="syncPill">'+syncHTML()+'</span></div>'+
       (searching?'':ocupacionDiaHTML(state.fecha, zonaTab()));
     html += rows.length
       ? '<div class="list">'+rows.map(function(r){return cardHTML(r,{showDate:searching});}).join("")+'</div>'
@@ -1104,6 +1109,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     draftMesas=state.mesas.map(function(m){return {id:m.id,nombre:m.nombre,zona:m.zona,capacidad:m.capacidad};});
     document.getElementById("cfgTel").value=cfg.telLocal||"";
     document.getElementById("cfgSMS").value=cfg.plantillaSMS||"";
+    document.getElementById("cuentaEmail").textContent=(sesion&&sesion.user&&sesion.user.email)||"sin conexión";
     ["Sala","Terraza"].forEach(function(z){
       var L=limites(z);
       document.getElementById("cfgAforo"+z).value=L.aforo;
@@ -1150,6 +1156,170 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
     persistMesas(); dlgM.close(); render();
   };
 
+  // ---------- base de datos compartida (Supabase) ----------
+  // Todas las tablets y móviles con sesión iniciada ven las mismas reservas.
+  // Cada aparato guarda además una copia para poder seguir trabajando sin internet:
+  // lo que se apunta sin conexión se sube solo en cuanto vuelve internet.
+  var SUPA_URL="https://ptmkzskqlqoajlbyswem.supabase.co";
+  var SUPA_KEY="sb_publishable_9F_hx-DDwLbD4pjfjxyglg_TqcrTI2h";   // clave pública: sin usuario y contraseña no da acceso a nada
+  var sb=null, sesion=null, canal=null;
+  var base=loadObj(K.base);   // lo último que sabemos que hay en el servidor (id -> huella)
+  var sync={estado:"local"};  // "ok" | "subiendo" | "sinconexion" | "local"
+  state.reservas.forEach(function(r){ if(!r.creadaEn) r.creadaEn=new Date().toISOString(); });
+
+  function loadObj(k){ try{ var v=JSON.parse(localStorage.getItem(k)); return (v&&typeof v==="object"&&!Array.isArray(v))?v:{}; }catch(e){ return {}; } }
+  function saveBase(){ try{ localStorage.setItem(K.base, JSON.stringify(base)); }catch(e){} }
+  function aFila(r){
+    return { id:r.id, fecha:r.fecha, hora:r.hora||"", nombre:r.nombre||"", telefono:r.telefono||"",
+      personas:Math.min(500,Math.max(1,parseInt(r.personas,10)||1)),
+      zona:(r.zona==="Sala"||r.zona==="Terraza")?r.zona:null, mesa_id:r.mesaId||null, notas:r.notas||"",
+      estado:EST[r.estado]?r.estado:"pendiente",
+      aviso_enviado:(r.avisoEnviado&&!isNaN(Date.parse(r.avisoEnviado)))?r.avisoEnviado:null,
+      creada_en:r.creadaEn };
+  }
+  function deFila(f){
+    return { id:f.id, fecha:f.fecha, hora:f.hora, nombre:f.nombre, telefono:f.telefono, personas:f.personas,
+      zona:f.zona||"", mesaId:f.mesa_id||null, notas:f.notas||"", estado:f.estado,
+      avisoEnviado:f.aviso_enviado||null, creadaEn:f.creada_en };
+  }
+  function huella(r){ return JSON.stringify(aFila(r)); }
+  function pendientesIds(){
+    var ids=[], vistos={};
+    state.reservas.forEach(function(r){ vistos[r.id]=1; if(base[r.id]!==huella(r)) ids.push(r.id); });
+    Object.keys(base).forEach(function(id){ if(!vistos[id]) ids.push(id); });
+    return ids;
+  }
+  function syncHTML(){
+    var n=pendientesIds().length;
+    if(sync.estado==="sinconexion" || !sb || !sesion)
+      return '<span class="sync off">● Sin conexión'+(n?' · '+n+' sin subir':'')+'</span>';
+    if(n || sync.estado==="subiendo") return '<span class="sync sub">● Guardando…</span>';
+    return '<span class="sync ok">● Compartido</span>';
+  }
+  function actualizarSync(){ var el=document.getElementById("syncPill"); if(el) el.innerHTML=syncHTML(); }
+
+  // Sube al servidor lo que ha cambiado en este aparato
+  var subiendo=false, otraVez=false, reintento=null;
+  function subir(){
+    if(!sb || !sesion){ actualizarSync(); return; }
+    if(subiendo){ otraVez=true; return; }
+    var porId={}, ups=[], dels=[];
+    state.reservas.forEach(function(r){ porId[r.id]=1; if(base[r.id]!==huella(r)) ups.push(aFila(r)); });
+    Object.keys(base).forEach(function(id){ if(!porId[id]) dels.push(id); });
+    if(!ups.length && !dels.length){ if(sync.estado!=="sinconexion") sync.estado="ok"; actualizarSync(); return; }
+    subiendo=true; sync.estado="subiendo"; actualizarSync();
+    var p=Promise.resolve();
+    if(ups.length) p=p.then(function(){ return sb.from("reservas").upsert(ups).then(function(res){
+      if(res.error) throw res.error; ups.forEach(function(f){ base[f.id]=JSON.stringify(f); }); }); });
+    if(dels.length) p=p.then(function(){ return sb.from("reservas").delete().in("id",dels).then(function(res){
+      if(res.error) throw res.error; dels.forEach(function(id){ delete base[id]; }); }); });
+    p.then(function(){ saveBase(); sync.estado="ok"; })
+     .catch(function(e){ console.warn("No se ha podido subir:", e); sync.estado="sinconexion";
+       clearTimeout(reintento); reintento=setTimeout(subir,15000); })
+     .then(function(){ subiendo=false; actualizarSync(); if(otraVez){ otraVez=false; subir(); } });
+  }
+
+  // Trae del servidor las reservas de hoy en adelante y las junta con lo que haya sin subir en este aparato
+  function cargar(){
+    if(!sb || !sesion) return Promise.resolve();
+    var hoy=todayISO();
+    return sb.from("reservas").delete().lt("fecha",hoy).then(function(){
+      return sb.from("reservas").select("*").gte("fecha",hoy);
+    }).then(function(res){
+      if(res.error) throw res.error;
+      var pend={}; pendientesIds().forEach(function(id){ pend[id]=1; });
+      var local={}; state.reservas.forEach(function(r){ local[r.id]=r; });
+      var nuevaBase={}, enServidor={}, lista=[];
+      res.data.forEach(function(f){
+        var r=deFila(f); enServidor[r.id]=1; nuevaBase[r.id]=huella(r);
+        if(pend[r.id]){ if(local[r.id]) lista.push(local[r.id]); }   // cambio local sin subir: manda el local
+        else lista.push(r);
+      });
+      state.reservas.forEach(function(r){
+        if(enServidor[r.id]) return;
+        if(base[r.id]!==undefined && !pend[r.id]) return;   // otro aparato la ha borrado
+        lista.push(r);                                       // nueva en este aparato: se subirá
+      });
+      base=nuevaBase; saveBase();
+      state.reservas=lista; saveArr(K.res, state.reservas);
+      if(sync.estado==="sinconexion") sync.estado="ok";
+      render(); subir();
+    }).catch(function(e){ console.warn("No se ha podido cargar:", e); sync.estado="sinconexion"; actualizarSync(); });
+  }
+
+  // Cambios hechos en otro aparato: llegan al momento
+  function escuchar(){
+    if(canal) sb.removeChannel(canal);
+    canal=sb.channel("reservas-cambios")
+      .on("postgres_changes",{event:"*",schema:"public",table:"reservas"},function(p){
+        var pend={}; pendientesIds().forEach(function(id){ pend[id]=1; });
+        if(p.eventType==="DELETE"){
+          var id=p.old&&p.old.id; if(!id) return;
+          delete base[id];
+          if(!pend[id]) state.reservas=state.reservas.filter(function(r){ return r.id!==id; });
+        } else {
+          var r=deFila(p.new);
+          if(r.fecha<todayISO()) return;
+          base[r.id]=huella(r);
+          if(!pend[r.id]){
+            var i=-1; state.reservas.forEach(function(x,k){ if(x.id===r.id) i=k; });
+            if(i>=0) state.reservas[i]=r; else state.reservas.push(r);
+          }
+        }
+        saveBase(); saveArr(K.res, state.reservas); render();
+      })
+      .subscribe(function(status){ if(status==="SUBSCRIBED") cargar(); });
+  }
+
+  // Inicio de sesión
+  function mostrarLogin(msg){
+    document.body.classList.add("sinsesion");
+    var e=document.getElementById("loginErr"); e.hidden=!msg; e.textContent=msg||"";
+  }
+  function conSesion(){ document.body.classList.remove("sinsesion"); escuchar(); cargar(); }
+  function arrancar(){
+    if(!window.supabase){ sync.estado="sinconexion"; actualizarSync(); return; }   // sin internet la primera vez
+    sb=window.supabase.createClient(SUPA_URL, SUPA_KEY, {auth:{persistSession:true, autoRefreshToken:true}});
+    sb.auth.onAuthStateChange(function(evento, s){
+      sesion=s;
+      if(evento==="SIGNED_OUT") mostrarLogin();
+    });
+    sb.auth.getSession().then(function(res){
+      sesion=res.data.session;
+      if(sesion) conSesion(); else mostrarLogin();
+    });
+  }
+  document.getElementById("loginForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var btn=document.getElementById("loginBtn");
+    if(!sb){ mostrarLogin("Sin conexión. Conéctate a internet para entrar."); return; }
+    btn.disabled=true; btn.textContent="Entrando…";
+    sb.auth.signInWithPassword({ email:document.getElementById("loginEmail").value.trim(),
+                                 password:document.getElementById("loginPass").value })
+      .then(function(res){
+        btn.disabled=false; btn.textContent="Entrar";
+        if(res.error){
+          mostrarLogin(/invalid/i.test(res.error.message) ? "Correo o contraseña incorrectos."
+                                                         : "No se ha podido entrar. Revisa la conexión e inténtalo otra vez.");
+          return;
+        }
+        sesion=res.data.session; document.getElementById("loginPass").value=""; conSesion();
+      });
+  });
+  document.getElementById("logoutBtn").onclick=function(){
+    var n=pendientesIds().length;
+    if(n && !confirm("Hay "+n+" cambios que todavía no se han subido. Si cierras la sesión ahora, se perderán. ¿Cerrar igualmente?")) return;
+    if(!n && !confirm("¿Cerrar la sesión en este aparato? Las reservas siguen guardadas y se ven desde los demás aparatos.")) return;
+    (sb ? sb.auth.signOut() : Promise.resolve()).then(function(){
+      if(canal && sb) sb.removeChannel(canal); canal=null; sesion=null;
+      state.reservas=[]; base={}; saveBase(); saveArr(K.res, []);   // no dejar datos de clientes en el aparato
+      dlgM.close(); render(); mostrarLogin();
+    });
+  };
+  document.addEventListener("visibilitychange", function(){ if(document.visibilityState==="visible") cargar(); });
+  window.addEventListener("online", function(){ subir(); cargar(); });
+  setInterval(function(){ if(document.visibilityState==="visible") cargar(); }, 120000);
+
   // ---------- borrado diario ----------
   // A las 00:00 se eliminan las reservas de los días anteriores.
   // Si la tablet estaba apagada a medianoche, se borran al abrir la app.
@@ -1170,6 +1340,7 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
   },30000);
 
   render();
+  arrancar();
 })();
 </script>
 
@@ -1207,22 +1378,6 @@ try{ if(localStorage.getItem("reservas_fenicia_unlocked_v1")==="1"){ document.bo
 })();
 </script>
 <script>
-(function(){
-  var PIN_HASH="c4beddcf557f06a5d8f4761b653b9a430a29b8f8aa574c1b5095b9075bd99209";
-  var btn=document.getElementById("gateBtn"), pin=document.getElementById("gatePin"), err=document.getElementById("gateErr");
-  function tryUnlock(){
-    crypto.subtle.digest("SHA-256", new TextEncoder().encode(pin.value)).then(function(buf){
-      var hex=Array.prototype.map.call(new Uint8Array(buf),function(b){ return ("0"+b.toString(16)).slice(-2); }).join("");
-      if(hex===PIN_HASH){
-        try{ localStorage.setItem("reservas_fenicia_unlocked_v1","1"); }catch(e){}
-        document.body.classList.remove("locked");
-      } else { err.hidden=false; pin.value=""; pin.focus(); }
-    });
-  }
-  btn.addEventListener("click", tryUnlock);
-  pin.addEventListener("keydown", function(e){ if(e.key==="Enter") tryUnlock(); });
-  if(document.body.classList.contains("locked")) setTimeout(function(){ pin.focus(); }, 100);
-})();
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
 }
